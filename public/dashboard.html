@@ -1,0 +1,254 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        #main {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        #buttons {
+            display: flex;
+            justify-content: space-evenly;
+        }
+
+        #logout {
+            height: 35px;
+            width: 55px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main">
+        <h1>Dashboard</h1>
+        <button id="logout" onclick="logout()">Logout</button>
+    </div>
+    <br />
+    <br />
+    <div id="checkboxes"></div>
+    <br />
+    <br />
+    <div id="buttons">
+        <button id="prevButton" onclick="fetchPage(-1)">Previous</button>
+        <button id="submitButton" onclick="submit()">Submit</button>
+        <button id="nextButton" onclick="fetchPage(1)">Next</button>
+    </div>
+
+    <script>
+        var pageNum = 1;
+        var totPages = 1;
+        var checkboxData = []; // Array to store checkbox data
+        var finalSelectedCheckboxes = new Set();
+
+        document.addEventListener("DOMContentLoaded", async function () {
+            // Retrieve token from localStorage
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("Token not found. Please login.");
+                window.location.href = "/login.html";
+                return;
+            }
+
+
+            const headers = {
+                'Authorization': token
+            };
+
+            try {
+                let fetchTotalPagesCount = await fetch(`http://localhost:3000/api/v1/dashboard?action=totCount`, {
+                    method: "GET",
+                    headers: headers
+                });
+
+                const fetchedCount = await fetchTotalPagesCount.json();
+
+                totPages = parseInt(fetchedCount);
+
+
+                let response = await fetch(`http://localhost:3000/api/v1/dashboard?list=${pageNum}`, {
+                    method: "GET",
+                    headers: headers
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const checkboxesDiv = document.getElementById("checkboxes");
+                    data.forEach(item => {
+                        const checkbox = document.createElement("input");
+                        checkbox.type = "checkbox";
+                        checkbox.name = "selection";
+                        checkbox.value = item.id;
+
+                        const label = document.createElement("label");
+                        label.setAttribute("id", "checkboxesLabel");
+                        label.textContent = item.name;
+                        label.insertBefore(checkbox, label.firstChild);
+                        checkboxesDiv.appendChild(label);
+
+                        checkboxData.push({ id: item.id, name: item.name });
+                    });
+                    return;
+                }
+                else {
+                    alert("Unable to load dashboard. Please try again or come back later.");
+                    return;
+                }
+            } catch (error) {
+                console.log(error.message);
+                alert("Unable to load dashboard. Please try again or come back later.");
+                return;
+            }
+        });
+
+        async function fetchPage(delta) {
+
+            const newPage = pageNum + delta;
+            if (newPage >= 1 && newPage <= totPages) {
+                pageNum = newPage;
+            }
+
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("Token not found. Please login.");
+                window.location.href = "/login.html";
+                return;
+            }
+
+            const headers = {
+                'Authorization': token
+            };
+
+            let response = await fetch(`http://localhost:3000/api/v1/dashboard?list=${pageNum}`, {
+                method: "GET",
+                headers: headers
+            });
+
+            const data = await response.json();
+
+            const selectedCheckboxes = document.querySelectorAll('input[name="selection"]:checked');
+
+            const selectedValues = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+
+            if (selectedValues.length > 0) {
+                selectedValues.forEach((id) => {
+                    finalSelectedCheckboxes.add(id);
+                })
+            }
+
+            populateCheckboxes(data);
+
+        }
+
+        function populateCheckboxes(data) {
+
+            var checkboxesDiv = document.getElementById("checkboxes");
+            checkboxesDiv.innerHTML = ""; // Clear existing checkboxes
+            checkboxData = []; // Reset checkbox data array
+            data.forEach(item => {
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.name = "selection";
+                checkbox.value = item.id;
+
+                var label = document.createElement("label");
+                label.textContent = item.name;
+
+                label.insertBefore(checkbox, label.firstChild);
+                checkboxesDiv.appendChild(label);
+
+                // Store checkbox value and name in the checkboxData array
+                checkboxData.push({ id: item.id, name: item.name });
+
+                // Check if the checkbox is selected
+                if (finalSelectedCheckboxes.has(item.id)) {
+                    checkbox.checked = true;
+                }
+
+            });
+        }
+
+
+        async function submit() {
+            // document.getElementById("submitButton").addEventListener("submit", function () {
+            if (finalSelectedCheckboxes.size === 0) {
+                const selectedCheckboxes = document.querySelectorAll('input[name="selection"]:checked');
+
+                const selectedValues = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+
+                if (selectedValues.length > 0) {
+                    selectedValues.forEach((id) => {
+                        finalSelectedCheckboxes.add(id);
+                    })
+                }
+            }
+
+            const selectedIds = Array.from(finalSelectedCheckboxes);
+
+            if (selectedIds.length === 0) return;
+
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("Token not found. Please login.");
+                window.location.href = "/login.html";
+                return;
+            }
+
+            const headers = {
+                'Authorization': token,
+                'Content-Type': "application/json"
+            };
+
+            let response = await fetch(`http://localhost:3000/api/v1/dashboard?action=savePreference`, {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify(selectedIds)
+            });
+
+            const data = await response.text();
+
+            if (response.ok) {
+                alert(data);
+            } else {
+                alert(data);
+                window.location.href = "/dashboard.html"
+            }
+
+        }
+
+        async function logout() {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                alert("Token not found. Please login.");
+                window.location.href = "/login.html";
+                return;
+            }
+
+            const headers = {
+                'Authorization': token
+            };
+
+            let response = await fetch("http://localhost:3000/api/v1/auth/logout", {
+                method: "GET",
+                headers: headers,
+            });
+
+            if (response.ok) {
+                localStorage.removeItem("token");
+                window.location.href = "/login.html";
+            }
+        }
+    </script>
+</body>
+
+</html>

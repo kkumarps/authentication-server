@@ -1,0 +1,78 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter OTP</title>
+</head>
+
+<body>
+    <h2>OTP Form</h2>
+
+    <form id="otpForm" action="http://localhost:3000/api/v1/auth/signup" method="POST">
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div>
+            <label for="otp">OTP:</label>
+            <input type="number" id="otp" name="otp" required>
+        </div>
+        <button type="submit">Validate OTP</button>
+    </form>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Get the email parameter from the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const email = urlParams.get('email');
+
+            // Populate the email input field
+            const emailInput = document.getElementById("email");
+            if (email && emailInput) {
+                // emailInput.value = email;
+                // emailInput.setAttribute("readonly", true);
+                // Disable the input field
+                emailInput.disabled = true;
+
+                // Create a span element to replace the input field
+                var emailSpan = document.createElement("span");
+                emailSpan.id = "loadedemail";
+                emailSpan.textContent = email;
+
+                // Replace the input field with the span
+                emailInput.parentNode.insertBefore(emailSpan, emailInput);
+                emailInput.parentNode.removeChild(emailInput);
+            }
+        });
+
+
+        document.getElementById("otpForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            const urlEncoded = new URLSearchParams(formData).toString();
+
+            let response = await fetch(form.action, {
+                method: form.method,
+                body: urlEncoded,
+                headers: {
+                    "Content-type": form.enctype,
+                },
+            });
+
+            const message = await response.text();
+
+            if (response.ok) {
+                localStorage.setItem("token", message);
+                window.location.href = "/dashboard.html";
+            }
+            else {
+                alert(message);
+                window.location.href = "/otp.html";
+            }
+        });
+    </script>
+</body>
+
+</html>

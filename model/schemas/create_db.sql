@@ -1,0 +1,29 @@
+CREATE DATABASE IF NOT EXISTS user_data;
+
+USE user_data;
+
+CREATE TABLE IF NOT EXISTS registered_users (
+    email VARCHAR(50) PRIMARY KEY NOT NULL, 
+    name VARCHAR(100) NOT NULL, 
+    password VARCHAR(200) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS signup (
+    email VARCHAR(50) PRIMARY KEY NOT NULL,
+    name VARCHAR(100) NOT NULL, 
+    password VARCHAR(200) NOT NULL,
+    otp INTEGER(4) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tokens (
+    email VARCHAR(50) PRIMARY KEY NOT NULL, 
+    token VARCHAR(200) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS categories_preference (
+    email VARCHAR(50) PRIMARY KEY NOT NULL, 
+    preference VARCHAR(5000) NOT NULL
+);
+
+
+
